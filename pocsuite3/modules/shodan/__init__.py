@@ -1,3 +1,4 @@
+import time
 import urllib
 
 from configparser import ConfigParser
@@ -20,14 +21,15 @@ class Shodan():
             except Exception:
                 pass
 
-        if token:
-            self.token = token
+        self.token = token if token else "FFRmD54T9fKjhbWpowSdLBPh4f93W8k4"
         self.check_token()
 
     def token_is_available(self):
         if self.token:
             try:
                 resp = requests.get('https://api.shodan.io/account/profile?key={0}'.format(self.token))
+                # Shodan API 有访问时间间隔限制
+                time.sleep(1)
                 if resp and resp.status_code == 200 and "member" in resp.json():
                     return True
             except Exception as ex:
@@ -59,15 +61,14 @@ class Shodan():
             logger.error(str(ex))
 
     def get_resource_info(self):
-        if self.check_token():
-            try:
-                resp = requests.get('https://api.shodan.io/account/profile?key={0}'.format(self.token))
-                if resp and resp.status_code == 200 and 'credits' in resp.json():
-                    content = resp.json()
-                    self.credits = content['credits']
-                    return True
-            except Exception as ex:
-                logger.error(str(ex))
+        try:
+            resp = requests.get('https://api.shodan.io/account/profile?key={0}'.format(self.token))
+            if resp and resp.status_code == 200 and 'credits' in resp.json():
+                content = resp.json()
+                self.credits = content['credits']
+                return True
+        except Exception as ex:
+            logger.error(str(ex))
         return False
 
     def search(self, dork, pages=1, resource='host'):
